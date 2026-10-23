@@ -8,6 +8,7 @@ It includes parameter validation and default values for common configurations.
 """
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import List, Optional, Dict, Any, Union, Tuple
 from argparse import ArgumentParser, Namespace
 import os
@@ -18,66 +19,72 @@ from chrombpnet.genome import hg38, hg38_datasets, mm10, mm10_datasets
 
 class DataConfig:
     """Base configuration class for data handling.
-    
+
     This class defines the common parameters used across different data types
     and provides validation for these parameters.
     """
-    
+
     def __init__(
-            self,
-            data_dir: str = None,
-            peaks: str = None, #'{}/peaks.bed',
-            negatives: str = None, #'{}/negatives.bed', 
-            bigwig: str = None, #'{}/unstranded.bw', 
-            negative_sampling_ratio: float = 0.1,
-            fasta: str = None,
-            chrom_sizes: str = None,
-            in_window: int = 2114,
-            out_window: int = 1000,
-            shift: int = 500,
-            rc: float = 0.5,
-            outlier_threshold: float = 0.999,
-            data_type: str = 'profile',
-            exclude_chroms: list = [],
-            fold: int = 0,
-            genome: str = 'hg38',
-            batch_size: int = 64,
-            num_workers: int = 32,
-            debug: bool = False,
-            cached_dir: str = None,
-            **kwargs,
-        ):
+        self,
+        data_dir: str = None,
+        peaks: str = None,  #'{}/peaks.bed',
+        negatives: str = None,  #'{}/negatives.bed',
+        bigwig: str = None,  #'{}/unstranded.bw',
+        negative_sampling_ratio: float = 0.1,
+        fasta: str = None,
+        chrom_sizes: str = None,
+        in_window: int = 2114,
+        out_window: int = 1000,
+        shift: int = 500,
+        rc: float = 0.5,
+        outlier_threshold: float = 0.999,
+        data_type: str = "profile",
+        exclude_chroms: list = [],
+        fold: int | str | Path = 0,
+        genome: str = "hg38",
+        batch_size: int = 64,
+        num_workers: int = 32,
+        debug: bool = False,
+        cached_dir: str = None,
+        **kwargs,
+    ):
 
-            _genome = hg38 if genome == 'hg38' else mm10 if genome == 'mm10' else None
-            _datasets = hg38_datasets() if genome == 'hg38' else mm10_datasets() if genome == 'mm10' else None
-            self.data_dir = data_dir
-            self.peaks = peaks if peaks is not None else f'{data_dir}/peaks.bed'
-            self.negatives = negatives if negatives is not None else f'{data_dir}/negatives.bed' if data_dir is not None else None 
-            self.bigwig = bigwig if bigwig is not None else f'{data_dir}/unstranded.bw'
-            self.fasta = fasta if fasta is not None else _genome.fasta
-            self.chrom_sizes = chrom_sizes if chrom_sizes is not None else _genome.chrom_sizes
-            self.in_window = in_window
-            self.out_window = out_window
-            self.shift = shift
-            self.rc = rc
-            self.negative_sampling_ratio = negative_sampling_ratio
-            self.outlier_threshold = outlier_threshold
-            self.data_type = data_type
-            self.cached_dir = f'{data_dir}/cached_data/chrombpnet' if (data_dir is not None) and (cached_dir is None) else cached_dir
-            self.exclude_chroms = exclude_chroms
-            self.fold = fold
-            self.batch_size = batch_size    
-            self.num_workers = num_workers
-            self.debug = debug
+        _genome = hg38 if genome == "hg38" else mm10 if genome == "mm10" else None
+        _datasets = hg38_datasets() if genome == "hg38" else mm10_datasets() if genome == "mm10" else None
+        self.data_dir = data_dir
+        self.peaks = peaks if peaks is not None else f"{data_dir}/peaks.bed"
+        self.negatives = (
+            negatives if negatives is not None else f"{data_dir}/negatives.bed" if data_dir is not None else None
+        )
+        self.bigwig = bigwig if bigwig is not None else f"{data_dir}/unstranded.bw"
+        self.fasta = fasta if fasta is not None else _genome.fasta
+        self.chrom_sizes = chrom_sizes if chrom_sizes is not None else _genome.chrom_sizes
+        self.in_window = in_window
+        self.out_window = out_window
+        self.shift = shift
+        self.rc = rc
+        self.negative_sampling_ratio = negative_sampling_ratio
+        self.outlier_threshold = outlier_threshold
+        self.data_type = data_type
+        self.cached_dir = (
+            f"{data_dir}/cached_data/chrombpnet" if (data_dir is not None) and (cached_dir is None) else cached_dir
+        )
+        self.exclude_chroms = exclude_chroms
+        self.fold = fold
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        self.debug = debug
 
+        if isinstance(fold, int):
+            fold_file_path = _datasets.fetch(f"fold_{fold}.json", progressbar=False)
+        else:
+            fold_file_path = fold
 
-            fold_file_path = _datasets.fetch(f'fold_{fold}.json', progressbar=False)
-            splits_dict = json.load(open(fold_file_path))
-            self.training_chroms = splits_dict['train'] #if training_chroms is None else training_chroms
-            self.validation_chroms = splits_dict['valid'] #if validation_chroms is None else validation_chroms
-            self.test_chroms = splits_dict['test'] #if test_chroms is None else test_chroms
+        splits_dict = json.load(open(fold_file_path))
+        self.training_chroms = splits_dict["train"]  # if training_chroms is None else training_chroms
+        self.validation_chroms = splits_dict["valid"]  # if validation_chroms is None else validation_chroms
+        self.test_chroms = splits_dict["test"]  # if test_chroms is None else test_chroms
 
-        
     @classmethod
     def add_argparse_args(cls, parent_parser: ArgumentParser, **kwargs: Any):
         """Extends existing argparse by default `LightningDataModule` attributes.
@@ -88,7 +95,6 @@ class DataConfig:
             parser = LightningDataModule.add_argparse_args(parser)
         """
         return add_argparse_args(cls, parent_parser, **kwargs)
-
 
     @classmethod
     def from_argparse_args(
@@ -108,7 +114,6 @@ class DataConfig:
         """
         return from_argparse_args(cls, args, **kwargs)
 
-
     @classmethod
     def parse_argparser(cls, arg_parser: Union[ArgumentParser, Namespace]) -> Namespace:
         return parse_argparser(cls, arg_parser)
@@ -122,6 +127,3 @@ class DataConfig:
             (argument name, set with argument types, argument default value).
         """
         return get_init_arguments_and_types(cls)
-    
-
-
