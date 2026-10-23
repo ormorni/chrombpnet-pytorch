@@ -275,12 +275,12 @@ def run_modisco_and_shap(
     model,
     peaks,
     out_dir,
-    fasta=hg38.fasta,
+    fasta=None,
     in_window=2114,
     out_window=1000,
     task="counts",
     batch_size=64,
-    chrom_sizes=hg38.chrom_sizes,
+    chrom_sizes=None,
     sub_sample=None,
     meme_file=None,
     max_seqlets=1000_000,
@@ -291,6 +291,11 @@ def run_modisco_and_shap(
 ):
     if meme_file is None:
         meme_file = MEME_FILE()
+    if fasta is None:
+        fasta = hg38.fasta
+    if chrom_sizes is None:
+        chrom_sizes = hg38.chrom_sizes
+
     print("Modisco output directory:", out_dir)
     out_dir = os.path.join(out_dir, task)
     os.makedirs(out_dir, exist_ok=True)
