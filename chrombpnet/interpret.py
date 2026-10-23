@@ -432,7 +432,7 @@ if __name__ == "__main__":
     parser.add_argument("--task", type=str, default="profile")
     parser.add_argument("--batch_size", type=int, default=32)
     parser.add_argument("--sub_sample", type=int, default=None)
-    parser.add_argument("--chrom_sizes", type=str, default=hg38.chrom_sizes)
+    parser.add_argument("--chrom_sizes", type=str, default=None)
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--meme-file", type=str, default=None)
 

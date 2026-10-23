@@ -49,6 +49,7 @@ def update_shap_args(parser):
     parser.add_argument("-sc", "--schema", type=str, choices=['bed', 'plink', 'chrombpnet', 'original'], default='chrombpnet', help="Format for the input variants list")
     parser.add_argument("-c", "--chrom", type=str, help="Only score SNPs in selected chromosome")
     parser.add_argument("-st", "--shap_type",  nargs='+', default=["counts"])
+    parser.add_argument("-mf", "--meme-file", type=str, default=None)
     
 def fetch_shap_args():
     parser = argparse.ArgumentParser()
