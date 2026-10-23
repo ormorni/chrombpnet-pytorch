@@ -130,6 +130,7 @@ def get_parser() -> argparse.ArgumentParser:
     predict_wo_bias_parser = subparsers.add_parser('predict_wo_bias', help='Predict with ChromBPNet model without bias.')
     add_common_args(predict_wo_bias_parser)
 
+    train_parser = subparsers.add_parser('pipeline', help='Run the full training, prediction, and interpretation pipeline.')
     add_common_args(parser)
 
     parser.set_defaults(command='pipeline')
