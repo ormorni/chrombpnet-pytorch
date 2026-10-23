@@ -304,8 +304,14 @@ class Genome:
         else:
             raise ValueError("annotation must be a Path or Callable")
 
-        self._chrom_sizes = chrom_sizes
-        self.chrom_sizes = chrom_sizes
+        if callable(chrom_sizes):
+            self._fetch_chrom_sizes = chrom_sizes
+            self._chrom_sizes = None
+        elif isinstance(chrom_sizes, Path) or isinstance(chrom_sizes, str):
+            self._chrom_sizes = Path(chrom_sizes)
+            self._fetch_chrom_sizes = None
+        else:
+            raise ValueError("chrom_sizes mut be a Path or a Callable")
 
     @property
     def fasta(self):
@@ -335,21 +341,19 @@ class Genome:
             self._annotation = Path(self._fetch_annotation())
         return str(self._annotation)
 
-    # @property
-    # def chrom_sizes(self):
-    #     """
-    #     A dictionary with chromosome names as keys and their lengths as values.
+    @property
+    def chrom_sizes(self):
+        """
+        The Path to the chromosome sizes file.
 
-    #     Returns
-    #     -------
-    #     dict[str, int]
-    #         A dictionary of chromosome sizes.
-    #     """
-    #     if self._chrom_sizes is None:
-    #         from pyfaidx import Fasta
-    #         fasta = Fasta(self.fasta)
-    #         self._chrom_sizes = {chr: len(fasta[chr]) for chr in fasta.keys()}
-    #     return self._chrom_sizes
+        Returns
+        -------
+        Path
+            The path to the chromosome sizes file.
+        """
+        if self._chrom_sizes is None:
+            self._chrom_sizes = Path(self._fetch_chrom_sizes())
+        return str(self._chrom_sizes)
 
 
 GRCh38 = Genome(
@@ -359,7 +363,7 @@ GRCh38 = Genome(
         progressbar=True,
     ),
     annotation=lambda: hg38_datasets().fetch("hg38.gtf.gz", progressbar=True),
-    chrom_sizes=hg38_datasets().fetch("hg38.chrom.sizes", progressbar=True),
+    chrom_sizes=lambda: hg38_datasets().fetch("hg38.chrom.sizes", progressbar=True),
 )
 hg38 = GRCh38
 
@@ -368,7 +372,7 @@ GRCh37 = Genome(
         "hg19.fa", progressbar=True, processor=Decompress(method="gzip", name="hg19.fa")
     ),
     annotation=lambda: hg19_datasets().fetch("hg19.gtf.gz", progressbar=True),
-    chrom_sizes=hg19_datasets().fetch("hg19.chrom.sizes", progressbar=True),
+    chrom_sizes=lambda: hg19_datasets().fetch("hg19.chrom.sizes", progressbar=True),
 )
 hg19 = GRCh37
 
@@ -379,7 +383,7 @@ GRCm38 = Genome(
         progressbar=True,
     ),
     annotation=lambda: mm10_datasets().fetch("mm10.gtf.gz", progressbar=True),
-    chrom_sizes=mm10_datasets().fetch("mm10.chrom.sizes", progressbar=True),
+    chrom_sizes=lambda: mm10_datasets().fetch("mm10.chrom.sizes", progressbar=True),
 )
 mm10 = GRCm38
 
