@@ -115,11 +115,7 @@ def get_parser() -> argparse.ArgumentParser:
     )
     add_common_args(predict_wo_bias_parser)
 
-    train_parser = subparsers.add_parser(
-        "pipeline", help="Run the full training, prediction, and interpretation pipeline."
-    )
     add_common_args(parser)
-
     parser.set_defaults(command="pipeline")
 
     return parser
@@ -392,7 +388,7 @@ def reproduce(args):
 def main():
     parser = get_parser()
     args = parser.parse_args()
-
+    print(args)
     if args.command == "train":
         if args.fold == 5:
             for fold in range(5):
