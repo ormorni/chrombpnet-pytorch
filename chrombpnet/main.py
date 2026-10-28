@@ -129,22 +129,22 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 def load_model(args):
-    print("Loading model:")
-    print(f"{args.out_dir=}")
-    print(f"{args.name=}")
-    print(f"{args.checkpoint=}")
+    print("Loading model:", file=sys.stderr)
+    print(f"{args.out_dir=}", file=sys.stderr)
+    print(f"{args.name=}", file=sys.stderr)
+    print(f"{args.checkpoint=}", file=sys.stderr)
     if args.checkpoint is None:
         fold_name = make_fold_name(args.fold)
         out_dir = os.path.join(args.out_dir, args.name, fold_name)
         checkpoint = os.path.join(out_dir, "checkpoints/best_model.ckpt")
-        print(f"Checkpoint is None. Defaulting to {checkpoint}")
+        print(f"Checkpoint is None. Defaulting to {checkpoint}", file=sys.stderr)
         if not os.path.exists(checkpoint):
             args.checkpoint = None
-            print(f"No checkpoint found in {out_dir}/checkpoints/best_model.ckpt")
+            print(f"No checkpoint found in {out_dir}/checkpoints/best_model.ckpt", file=sys.stderr)
             model_wrapper = ChromBPNetWrapper(args)
         else:
             args.checkpoint = checkpoint
-            print(f"Loading checkpoint from {checkpoint}")
+            print(f"Loading checkpoint from {checkpoint}", file=sys.stderr)
             model_wrapper = ChromBPNetWrapper.load_from_checkpoint(args.checkpoint, map_location="cpu")
     else:
         model_wrapper = ChromBPNetWrapper(args)
@@ -406,7 +406,7 @@ def reproduce(args):
 
 
 def main():
-    print("Version 1")
+    print("Version 1", file=sys.stderr)
 
     parser = get_parser()
     args = parser.parse_args()
