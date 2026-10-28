@@ -21,6 +21,7 @@ Usage:
 
 import os
 import argparse
+from pathlib import Path
 from typing import Optional, List, Union, Dict, Any
 
 import lightning as L
@@ -44,6 +45,11 @@ from chrombpnet.genome import hg38_datasets, mm10_datasets
 from chrombpnet.metrics import compare_with_observed, save_predictions, load_output_to_regions
 from chrombpnet.interpret import run_modisco_and_shap
 from chrombpnet.logger import create_logger
+
+
+def make_fold_name(fold: int | str | Path):
+    """Gets a cannonical name for the fold."""
+    return f"fold_{fold}" if isinstance(fold, int) else Path(fold).stem
 
 
 def add_common_args(parser: argparse.ArgumentParser) -> None:
@@ -127,7 +133,8 @@ def load_model(args):
     print(f"{args.name=}")
     print(f"{args.checkpoint=}")
     if args.checkpoint is None:
-        out_dir = os.path.join(args.out_dir, args.name, f"fold_{args.fold}")
+        fold_name = make_fold_name(args.fold)
+        out_dir = os.path.join(args.out_dir, args.name, fold_name)
         checkpoint = os.path.join(out_dir, "checkpoints/best_model.ckpt")
         print(f"Checkpoint is None. Defaulting to {checkpoint}")
         if not os.path.exists(checkpoint):
@@ -169,7 +176,9 @@ def compare_predictions(out_dir, chrom):
 def train(args):
     data_config = DataConfig.from_argparse_args(args)
     loggers = [L.pytorch.loggers.CSVLogger(args.out_dir, name=args.name, version=f"fold_{args.fold}")]
-    out_dir = os.path.join(args.out_dir, args.name, f"fold_{args.fold}")
+
+    fold_name = make_fold_name(args.fold)
+    out_dir = os.path.join(args.out_dir, args.name, fold_name)
     os.makedirs(out_dir, exist_ok=True)
 
     if os.path.exists(os.path.join(out_dir, "checkpoints/best_model.ckpt")) and not args.force:
@@ -177,7 +186,7 @@ def train(args):
             f"Model folder {out_dir}/checkpoints/best_model.ckpt already exists. Please delete the existing model or specify a new version."
         )
     if args.bias_scaled is None:
-        args.bias_scaled = os.path.join(args.data_dir, f"models/fold_{args.fold}/bias_scaled.h5")
+        args.bias_scaled = os.path.join(args.data_dir, f"models/{fold_name}/bias_scaled.h5")
         if not os.path.exists(args.bias_scaled):
             args.bias_scaled = os.path.join(args.data_dir, f"bias_scaled.h5")
             if not os.path.exists(args.bias_scaled):
@@ -232,8 +241,9 @@ def train(args):
 
 def finetune(args):
     data_config = DataConfig.from_argparse_args(args)
-    loggers = [L.pytorch.loggers.CSVLogger(args.out_dir, name=args.name, version=f"fold_{args.fold}")]
-    out_dir = os.path.join(args.out_dir, args.name, "finetune", f"fold_{args.fold}")
+    fold_name = make_fold_name(args.fold)
+    loggers = [L.pytorch.loggers.CSVLogger(args.out_dir, name=args.name, version=fold_name)]
+    out_dir = os.path.join(args.out_dir, args.name, "finetune", fold_name)
     os.makedirs(out_dir, exist_ok=True)
 
     if os.path.exists(os.path.join(out_dir, "checkpoints/best_model.ckpt")) and not args.force:
@@ -290,14 +300,15 @@ def finetune(args):
 
 
 def predict(args, model_wrapper, datamodule=None, mode="predict"):
-    out_dir = os.path.join(args.out_dir, args.name, f"fold_{args.fold}")
-    if datamodule is None:
-        data_config = DataConfig.from_argparse_args(args)
-        data_config.batch_size = 1000
-        datamodule = DataModule(data_config)
+    fold_name = make_fold_name(args.fold)
+    out_dir = os.path.join(args.out_dir, args.name, fold_name)
+    # if datamodule is None:  # Commented out since if this `if` does not happen, the program crashes.
+    data_config = DataConfig.from_argparse_args(args)
+    data_config.batch_size = 1000
+    datamodule = DataModule(data_config)
 
     if args.bias_scaled is None:
-        args.bias_scaled = os.path.join(args.data_dir, f"models/fold_{args.fold}/bias_scaled.h5")
+        args.bias_scaled = os.path.join(args.data_dir, f"models/{fold_name}/bias_scaled.h5")
     trainer = L.Trainer(logger=False, fast_dev_run=args.fast_dev_run, devices=args.gpu, val_check_interval=None)
     os.makedirs(os.path.join(out_dir, mode), exist_ok=True)
     log = create_logger(args.model_type, ch=True, fh=os.path.join(out_dir, f"predict.log"), overwrite=True)
@@ -328,7 +339,8 @@ def interpret(args, model, datamodule=None):
     """
     Use the model: chrombpnet_wo_bias
     """
-    out_dir = os.path.join(args.out_dir, args.name, f"fold_{args.fold}")
+    fold_name = make_fold_name(args.fold)
+    out_dir = os.path.join(args.out_dir, args.name, fold_name)
     if datamodule is None:
         data_config = DataConfig.from_argparse_args(args)
         datamodule = DataModule(data_config)
@@ -350,22 +362,21 @@ def interpret(args, model, datamodule=None):
 
 
 def reproduce(args):
-    out_dir = os.path.join(args.out_dir, args.name, f"fold_{args.fold}", "reproduce")
+    fold_name = make_fold_name(args.fold)
+    out_dir = os.path.join(args.out_dir, args.name, fold_name, "reproduce")
     os.makedirs(out_dir, exist_ok=True)
     log = create_logger(args.model_type, ch=True, fh=os.path.join(out_dir, f"reproduce.log"), overwrite=True)
     log.info(f"out_dir: {out_dir}")
     log.info(f"model_type: {args.model_type}")
     log.info(f"chrom: {args.chrom}")
 
-    if os.path.exists(os.path.join(args.out_dir, args.name, f"fold_{args.fold}", "checkpoints/chrombpnet_wo_bias.pt")):
+    if os.path.exists(os.path.join(args.out_dir, args.name, fold_name, "checkpoints/chrombpnet_wo_bias.pt")):
         log.info(f"Model already trained, loading from {args.out_dir}/checkpoints/chrombpnet_wo_bias.pt")
-        args.chrombpnet_wo_bias = os.path.join(
-            args.out_dir, args.name, f"fold_{args.fold}", "checkpoints/chrombpnet_wo_bias.pt"
-        )
+        args.chrombpnet_wo_bias = os.path.join(args.out_dir, args.name, fold_name, "checkpoints/chrombpnet_wo_bias.pt")
     else:
         train(args)
 
-    predict_path = os.path.join(args.out_dir, args.name, f"fold_{args.fold}", "predict", args.chrom, "regions.csv")
+    predict_path = os.path.join(args.out_dir, args.name, fold_name, "predict", args.chrom, "regions.csv")
     if not os.path.exists(predict_path):
         log.info(f"Predicting with pytorch model")
         model_wrapper = load_model(args)
@@ -373,21 +384,19 @@ def reproduce(args):
     else:
         log.info(f"{predict_path} already exists")
 
-    if os.path.exists(os.path.join(args.data_dir, f"models/fold_{args.fold}/chrombpnet_wo_bias.h5")):
+    if os.path.exists(os.path.join(args.data_dir, f"models/{fold_name}/chrombpnet_wo_bias.h5")):
         log.info(f"Predicting with chrombpnet model: {args.chrombpnet_wo_bias}")
-        args.checkpoint = os.path.join(args.data_dir, f"models/fold_{args.fold}/chrombpnet_wo_bias.h5")
-        reproduce_path = os.path.join(
-            args.out_dir, args.name, f"fold_{args.fold}", "reproduce", args.chrom, "regions.csv"
-        )
+        args.checkpoint = os.path.join(args.data_dir, f"models/{fold_name}/chrombpnet_wo_bias.h5")
+        reproduce_path = os.path.join(args.out_dir, args.name, fold_name, "reproduce", args.chrom, "regions.csv")
         if not os.path.exists(reproduce_path):
             model_wrapper = load_model(args)
             predict(args, model_wrapper, mode="reproduce")
         else:
             log.info(f"{reproduce_path} already exists")
 
-        compare_predictions(os.path.join(args.out_dir, args.name, f"fold_{args.fold}"), args.chrom)
+        compare_predictions(os.path.join(args.out_dir, args.name, fold_name), args.chrom)
     else:
-        log.info(f"ChromBPNet model not found in {args.data_dir}/models/fold_{args.fold}/chrombpnet_wo_bias.h5")
+        log.info(f"ChromBPNet model not found in {args.data_dir}/models/{fold_name}/chrombpnet_wo_bias.h5")
 
 
 def main():
@@ -431,7 +440,8 @@ def main():
         args.n_filters = 64
         bpnet_bias_wrapper = BPNetWrapper(args)
         if args.bias_scaled is None:
-            args.bias_scaled = os.path.join(args.data_dir, f"models/fold_{args.fold}/bias_scaled.h5")
+            fold_name = make_fold_name(args.fold)
+            args.bias_scaled = os.path.join(args.data_dir, f"models/{fold_name}/bias_scaled.h5")
         bpnet_bias_wrapper.model = init_bias(args.bias_scaled)
         print("bias_scaled", args.bias_scaled)
         print("bpnet_bias_wrapper", bpnet_bias_wrapper.model)
