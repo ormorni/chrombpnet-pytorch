@@ -22,6 +22,7 @@ Usage:
 import os
 import argparse
 from pathlib import Path
+import sys
 from typing import Optional, List, Union, Dict, Any
 
 import lightning as L
@@ -174,6 +175,8 @@ def compare_predictions(out_dir, chrom):
 
 
 def train(args):
+    print("main::train")
+    print("main::train", file=sys.stderr)
     data_config = DataConfig.from_argparse_args(args)
     loggers = [L.pytorch.loggers.CSVLogger(args.out_dir, name=args.name, version=f"fold_{args.fold}")]
 
@@ -300,6 +303,9 @@ def finetune(args):
 
 
 def predict(args, model_wrapper, datamodule=None, mode="predict"):
+    print("main::predict")
+    print("main::predict", file=sys.stderr)
+
     fold_name = make_fold_name(args.fold)
     out_dir = os.path.join(args.out_dir, args.name, fold_name)
     # if datamodule is None:  # Commented out since if this `if` does not happen, the program crashes.
