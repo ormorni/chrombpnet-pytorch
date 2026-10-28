@@ -122,9 +122,14 @@ def get_parser() -> argparse.ArgumentParser:
 
 
 def load_model(args):
+    print("Loading model:")
+    print(f"{args.out_dir=}")
+    print(f"{args.name=}")
+    print(f"{args.checkpoint=}")
     if args.checkpoint is None:
         out_dir = os.path.join(args.out_dir, args.name, f"fold_{args.fold}")
         checkpoint = os.path.join(out_dir, "checkpoints/best_model.ckpt")
+        print(f"Checkpoint is None. Defaulting to {checkpoint}")
         if not os.path.exists(checkpoint):
             args.checkpoint = None
             print(f"No checkpoint found in {out_dir}/checkpoints/best_model.ckpt")
