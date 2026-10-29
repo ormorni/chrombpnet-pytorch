@@ -19,6 +19,7 @@ Usage:
     chrombpnet interpret [options]  # For interpretation
 """
 
+import logging
 import os
 import argparse
 from pathlib import Path
@@ -177,10 +178,10 @@ def compare_predictions(out_dir, chrom):
 def train(args):
     print("main::train")
     print("main::train", file=sys.stderr)
-    data_config = DataConfig.from_argparse_args(args)
-    loggers = [L.pytorch.loggers.CSVLogger(args.out_dir, name=args.name, version=f"fold_{args.fold}")]
-
     fold_name = make_fold_name(args.fold)
+    data_config = DataConfig.from_argparse_args(args)
+    loggers = [L.pytorch.loggers.CSVLogger(args.out_dir, name=args.name, version=fold_name)]
+
     out_dir = os.path.join(args.out_dir, args.name, fold_name)
     os.makedirs(out_dir, exist_ok=True)
 
@@ -237,6 +238,7 @@ def train(args):
         # precision="bf16"
     )
     trainer.fit(model_wrapper, datamodule)
+    print(f"{args.model_type=}", file=sys.stderr)
     if args.model_type == "chrombpnet" and not args.fast_dev_run:
         model_wrapper = load_model(args)  # reload the best model to get the chrombpnet_wo_bias
         torch.save(model_wrapper.model.state_dict(), os.path.join(out_dir, "checkpoints/chrombpnet_wo_bias.pt"))
@@ -407,6 +409,7 @@ def reproduce(args):
 
 def main():
     print("Version 1", file=sys.stderr)
+    logging.getLogger("lightning.pytorch").setLevel(logging.DEBUG)
 
     parser = get_parser()
     args = parser.parse_args()
