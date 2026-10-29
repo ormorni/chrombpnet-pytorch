@@ -21,7 +21,7 @@ import pandas as pd
 import lightning as L
 
 
-from chrombpnet.data_utils import load_region_df, load_data, random_crop, crop_revcomp_augment, get_cts
+from chrombpnet.data_utils import load_region_df, load_data, random_crop, crop_revcomp_augment, get_cts, make_fold_name
 
 
 class DataModule(L.LightningDataModule):
@@ -67,11 +67,11 @@ class DataModule(L.LightningDataModule):
         self._load_regions()
         self._setup_chromosomes()
         self._split_data()
-
+        fold_name = make_fold_name(config.fold)
         self.cached_dir = {}
-        self.cached_dir['train'] = os.path.join(config.cached_dir, f'fold_{config.fold}', 'train') if config.cached_dir else None
-        self.cached_dir['val'] = os.path.join(config.cached_dir, f'fold_{config.fold}', 'val') if config.cached_dir else None
-        self.cached_dir['test'] = os.path.join(config.cached_dir, f'fold_{config.fold}', 'test') if config.cached_dir else None
+        self.cached_dir['train'] = os.path.join(config.cached_dir, fold_name, 'train') if config.cached_dir else None
+        self.cached_dir['val'] = os.path.join(config.cached_dir, fold_name, 'val') if config.cached_dir else None
+        self.cached_dir['test'] = os.path.join(config.cached_dir, fold_name, 'test') if config.cached_dir else None
 
     def _load_regions(self):
         """Load peak and negative regions from files."""

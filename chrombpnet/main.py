@@ -47,12 +47,7 @@ from chrombpnet.genome import hg38_datasets, mm10_datasets
 from chrombpnet.metrics import compare_with_observed, save_predictions, load_output_to_regions
 from chrombpnet.interpret import run_modisco_and_shap
 from chrombpnet.logger import create_logger
-
-
-def make_fold_name(fold: int | str | Path):
-    """Gets a cannonical name for the fold."""
-    return f"fold_{fold}" if isinstance(fold, int) else Path(fold).stem
-
+from chrombpnet.data_utils import make_fold_name
 
 def add_common_args(parser: argparse.ArgumentParser) -> None:
     """Add arguments shared across train, predict, and interpret commands.

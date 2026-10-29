@@ -1,5 +1,7 @@
 # Author: Lei Xiong <jsxlei@gmail.com>
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pyBigWig
@@ -486,3 +488,8 @@ def html_to_pdf(input_html, output_pdf):
         }
     ''')
     HTML(input_html).write_pdf(output_pdf, stylesheets=[css])
+
+
+def make_fold_name(fold: int | str | Path):
+    """Gets a cannonical name for the fold."""
+    return f"fold_{fold}" if isinstance(fold, int) else Path(fold).stem
