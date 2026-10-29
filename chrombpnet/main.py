@@ -74,9 +74,9 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--precision", type=int, default=32, help="Training precision (16, 32, or 64)")
     parser.add_argument("--max_epochs", type=int, default=100, help="Maximum number of training epochs")
     parser.add_argument("--gradient_clip", type=float, default=None, help="Gradient clipping value")
-    parser.add_argument(
-        "--force", action="store_true", default=False, help="Force training even if model already exists"
-    )
+    parser.add_argument("--force", action="store_true", default=False, help="Force training even if model already exists")
+    parser.add_argument("--detect_anomaly", action="store_true", default=False, help="Detects anomalies during the training.")
+
 
     # Add model-specific arguments
     ChromBPNetConfig.add_argparse_args(parser)
@@ -230,14 +230,14 @@ def train(args):
         fast_dev_run=args.fast_dev_run,
         precision=args.precision,
         gradient_clip_val=args.gradient_clip,
+        detect_anomaly=args.detect_anomaly
         # precision="bf16"
     )
     trainer.fit(model_wrapper, datamodule)
     print(f"{args.model_type=}", file=sys.stderr)
     if args.model_type == "chrombpnet" and not args.fast_dev_run:
-        # model_wrapper = load_model(args)  # reload the best model to get the chrombpnet_wo_bias
-        torch.save(model_wrapper.chrombpnet_wo_bias.state_dict(), os.path.join(out_dir, "checkpoints/chrombpnet_wo_bias.pt"))
-        torch.save(model_wrapper.bias.state_dict(), os.path.join(out_dir, "checkpoints/chrombpnet_bias.pt"))
+        model_wrapper = load_model(args)  # reload the best model to get the chrombpnet_wo_bias
+        torch.save(model_wrapper.model.state_dict(), os.path.join(out_dir, "checkpoints/chrombpnet_wo_bias.pt"))
 
 
 def finetune(args):
