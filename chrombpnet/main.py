@@ -235,8 +235,9 @@ def train(args):
     trainer.fit(model_wrapper, datamodule)
     print(f"{args.model_type=}", file=sys.stderr)
     if args.model_type == "chrombpnet" and not args.fast_dev_run:
-        model_wrapper = load_model(args)  # reload the best model to get the chrombpnet_wo_bias
-        torch.save(model_wrapper.model.state_dict(), os.path.join(out_dir, "checkpoints/chrombpnet_wo_bias.pt"))
+        # model_wrapper = load_model(args)  # reload the best model to get the chrombpnet_wo_bias
+        torch.save(model_wrapper.chrombpnet_wo_bias.state_dict(), os.path.join(out_dir, "checkpoints/chrombpnet_wo_bias.pt"))
+        torch.save(model_wrapper.bias.state_dict(), os.path.join(out_dir, "checkpoints/chrombpnet_bias.pt"))
 
 
 def finetune(args):
@@ -404,7 +405,7 @@ def reproduce(args):
 
 def main():
     print("Version 1", file=sys.stderr)
-    logging.getLogger("lightning.pytorch").setLevel(logging.DEBUG)
+    logging.getLogger("lightning.pytorch").setLevel(logging.INFO)
 
     parser = get_parser()
     args = parser.parse_args()
